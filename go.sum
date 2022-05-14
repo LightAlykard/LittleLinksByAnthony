@@ -1,0 +1,4 @@
+github.com/LightAlykard/LittleLinksByAnthony v0.0.0-20220514145255-5a26cd2eb838 h1:2haDp09X1ihaw2choPHjR9Q7ReNmbnqwb03fXacksMU=
+github.com/LightAlykard/LittleLinksByAnthony v0.0.0-20220514145255-5a26cd2eb838/go.mod h1:BPvVHfLkuzGDuFB8eqbJlkw1Abnqd4aGHikDulHuyoA=
+github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
+github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=

@@ -1,12 +1,31 @@
 package starter
 
-//import "LittleLinksByAnthony/app/repos/link"
+import (
+	"context"
+	"sync"
 
-// type App struct {
-// 	lk *link.Links
-// }
+	"github.com/LightAlykard/LittleLinksByAnthony/app/repos/link"
+)
 
-// func (a *App) Serve() {
-// 	//lk := link.NewLinks(nil)
+type App struct {
+	lk *link.Links
+}
 
-// }
+type HTTPServer interface {
+	Start(lk *link.Link)
+	Stop()
+}
+
+func NewApp(lkt link.LinkStore) *App {
+	a := &App{
+		lk: link.NewLinks(lkt),
+	}
+	return a
+}
+
+func (a *App) Serve(ctx context.Context, wg *sync.WaitGroup, hs HTTPServer) {
+	defer wg.Done()
+	hs.Start(a.lk)
+	<-ctx.Done()
+	hs.Stop()
+}
