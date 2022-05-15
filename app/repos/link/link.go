@@ -10,6 +10,7 @@ type Link struct {
 	ID        uuid.UUID
 	ShortLink string
 	LongLink  string
+	Data      string
 	//LiveStatus bool
 }
 
