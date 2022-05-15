@@ -12,7 +12,7 @@ type App struct {
 }
 
 type HTTPServer interface {
-	Start(lk *link.Link)
+	Start(lk *link.Links)
 	Stop()
 }
 
