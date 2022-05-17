@@ -1,6 +1,7 @@
 package link
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -15,9 +16,9 @@ type Link struct {
 }
 
 type LinkStore interface {
-	Create(l Link) (*uuid.UUID, error)
-	Read(lid uuid.UUID) (*Link, error)
-	Delete(lid uuid.UUID) error
+	Create(ctx context.Context, l Link) (*uuid.UUID, error)
+	Read(ctx context.Context, lid uuid.UUID) (*Link, error)
+	Delete(ctx context.Context, lid uuid.UUID) error
 	// SearchLinks(s string) (chan Link, error)
 }
 
@@ -31,8 +32,8 @@ func NewLinks(lkstore LinkStore) *Links {
 	}
 }
 
-func (lks *Links) Create(lk Link) (*Link, error) {
-	id, err := lks.lkstore.Create(lk)
+func (lks *Links) Create(ctx context.Context, lk Link) (*Link, error) {
+	id, err := lks.lkstore.Create(ctx, lk)
 	if err != nil {
 		return nil, fmt.Errorf("create link error: %w", err)
 	}
@@ -40,21 +41,21 @@ func (lks *Links) Create(lk Link) (*Link, error) {
 	return &lk, nil
 }
 
-func (lks *Links) Read(lid uuid.UUID) (*Link, error) {
-	lk, err := lks.lkstore.Read(lid)
+func (lks *Links) Read(ctx context.Context, lid uuid.UUID) (*Link, error) {
+	lk, err := lks.lkstore.Read(ctx, lid)
 	if err != nil {
 		return nil, fmt.Errorf("read link error: %w", err)
 	}
 	return lk, nil
 }
 
-func (lks *Links) Delete(lid uuid.UUID) (*Link, error) {
-	lk, err := lks.lkstore.Read(lid)
+func (lks *Links) Delete(ctx context.Context, lid uuid.UUID) (*Link, error) {
+	lk, err := lks.lkstore.Read(ctx, lid)
 	if err != nil {
 		return nil, fmt.Errorf("create link error: %w", err)
 	}
 
-	return lk, lks.lkstore.Delete(lid)
+	return lk, lks.lkstore.Delete(ctx, lid)
 }
 
 // func (lks *Links) SearchLinks(s string) (chan Link, error) {
