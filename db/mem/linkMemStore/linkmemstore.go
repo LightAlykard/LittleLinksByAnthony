@@ -54,16 +54,16 @@ func (lk *Links) Read(ctx context.Context, lid uuid.UUID) (*link.Link, error) {
 	return nil, sql.ErrNoRows
 }
 
-func (lk *Links) Delete(ctx context.Context, lid uuid.UUID) (*link.Link, error) {
+func (lk *Links) Delete(ctx context.Context, lid uuid.UUID) error {
 	lk.Lock()
 	defer lk.Unlock()
 
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return ctx.Err()
 	default:
 	}
 
 	delete(lk.m, lid)
-	return nil, nil
+	return nil
 }
