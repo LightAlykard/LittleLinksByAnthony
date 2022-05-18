@@ -16,10 +16,10 @@ import (
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
-	lkst := linkmemstore.NewUsers()
+	lkst := linkmemstore.NewLinks()
 	a := starter.NewApp(lkst)
-	us := link.NewUsers(lkst)
-	h := handler.NewHandlers(us)
+	us := link.NewLinks(lkst)
+	h := handler.NewRouter(us)
 	srv := server.NewServer(":8000", h)
 
 	wg := &sync.WaitGroup{}
