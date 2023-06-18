@@ -1,16 +1,17 @@
 package handler
 
 import (
-	"encoding/json"
+	"context"
+	"database/sql"
 	"errors"
-	"net/http"
+	"fmt"
 
 	"github.com/LightAlykard/LittleLinksByAnthony/app/repos/link"
 	"github.com/google/uuid"
 )
 
-type Router struct {
-	*http.ServeMux
+type Handlers struct {
+	// *http.ServeMux
 	lk *link.Links
 }
 
@@ -21,131 +22,83 @@ type Link struct {
 	Data      string    `json:"data"`
 }
 
-func NewRouter(lk *link.Links) *Router {
-	r := &Router{
-		ServeMux: http.NewServeMux(),
-		lk:       lk,
+func NewHandlers(lk *link.Links) *Handlers {
+	r := &Handlers{
+		// ServeMux: http.NewServeMux(),
+		lk: lk,
 	}
-	r.HandleFunc("/create", r.AuthMiddleware(http.HandlerFunc(r.CreateLink)).ServeHTTP)
-	r.HandleFunc("/read", r.AuthMiddleware(http.HandlerFunc(r.CreateLink)).ServeHTTP)
-	r.HandleFunc("/delete", r.AuthMiddleware(http.HandlerFunc(r.CreateLink)).ServeHTTP)
+	// r.HandleFunc("/create", r.AuthMiddleware(http.HandlerFunc(r.CreateLink)).ServeHTTP)
+	// r.HandleFunc("/read", r.AuthMiddleware(http.HandlerFunc(r.ReadLink)).ServeHTTP)
+	// r.HandleFunc("/delete", r.AuthMiddleware(http.HandlerFunc(r.DeleteLink)).ServeHTTP)
 	return r
 }
 
-func (rt *Router) AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if u, p, ok := r.BasicAuth(); !ok || !(u == "admin" && p == "admin") {
-				http.Error(w, "unautorized", http.StatusUnauthorized)
-				return
-			}
-			next.ServeHTTP(w, r)
-		},
-	)
-}
+func (rt *Handlers) CreateLink(ctx context.Context, l Link) (Link, error) {
 
-func (rt *Router) CreateLink(w http.ResponseWriter, r *http.Request) {
-
-	defer r.Body.Close()
-
-	l := Link{}
-	if err := json.NewDecoder(r.Body).Decode(&l); err != nil {
-		http.Error(w, "bad request", http.StatusUnauthorized)
-		return
-	}
-
-	bl := &link.Link{
+	bl := link.Link{
 		ShortLink: l.ShortLink,
 		LongLink:  l.LongLink,
 		Data:      l.Data,
 	}
-	nbl, err := rt.lk.Create(r.Context(), bl)
+
+	nbl, err := rt.lk.Create(ctx, bl)
 	if err != nil {
-		http.Error(w, "error when creating", http.StatusInternalServerError)
-		return
+		// http.Error(w, "error when creating", http.StatusInternalServerError)
+		return Link{}, fmt.Errorf("error when creating: %w", err)
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	// w.WriteHeader(http.StatusCreated)
 
-	_ = json.NewEncoder(w).Encode(
-		Link{
-			ID:        nbl.ID,
-			ShortLink: nbl.ShortLink,
-			LongLink:  nbl.LongLink,
-			Data:      nbl.Data,
-		},
-	)
-
+	return Link{
+		ID:        nbl.ID,
+		ShortLink: nbl.ShortLink,
+		LongLink:  nbl.LongLink,
+		Data:      nbl.Data,
+	}, nil
 }
 
-func (rt *Router) ReadLink(w http.ResponseWriter, r *http.Request) {
-	slid := r.URL.Query().Get("lid")
-	if slid == "" {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-	lid, err := uuid.Parse(slid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+var ErrLinkNotFound = errors.New("link not found")
+
+func (rt *Handlers) ReadLink(ctx context.Context, lid uuid.UUID) (Link, error) {
+
 	if (lid == uuid.UUID{}) {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
+		return Link{}, fmt.Errorf("bad request: lid is empty")
 	}
 
-	nbl, err := rt.lk.Read(r.Context(), lid)
+	nbl, err := rt.lk.Read(ctx, lid)
 	if err != nil {
-		if errors.Is(err.sql.ErrNoRows) {
-			http.Error(w, "not found", http.StatusNotFound)
-		} else {
-			http.Error(w, "error when reading", http.StatusInternalServerError)
+		if errors.Is(err, sql.ErrNoRows) {
+			return Link{}, ErrLinkNotFound
 		}
-		return
+		return Link{}, fmt.Errorf("error when reading: %w", err)
 	}
 
-	_ = json.NewEncoder(w).Encode(
-		Link{
-			ID:        nbl.ID,
-			ShortLink: nbl.ShortLink,
-			LongLink:  nbl.LongLink,
-			Data:      nbl.Data,
-		},
-	)
+	return Link{
+		ID:        nbl.ID,
+		ShortLink: nbl.ShortLink,
+		LongLink:  nbl.LongLink,
+		Data:      nbl.Data,
+	}, nil
 }
 
-func (rt *Router) DeleteLink(w http.ResponseWriter, r *http.Request) {
-	slid := r.URL.Query().Get("lid")
-	if slid == "" {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-	lid, err := uuid.Parse(slid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+func (rt *Handlers) DeleteLink(ctx context.Context, lid uuid.UUID) (Link, error) {
+
 	if (lid == uuid.UUID{}) {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
+		return Link{}, fmt.Errorf("bad request: lid is empty")
 	}
 
-	nbl, err := rt.lk.Delete(r.Context(), lid)
+	nbl, err := rt.lk.Delete(ctx, lid)
 	if err != nil {
-		if errors.Is(err.sql.ErrNoRows) {
-			http.Error(w, "not found", http.StatusNotFound)
-		} else {
-			http.Error(w, "error when reading", http.StatusInternalServerError)
+		if errors.Is(err, sql.ErrNoRows) {
+			return Link{}, ErrLinkNotFound
 		}
-		return
+		return Link{}, fmt.Errorf("error when reading: %w", err)
 	}
 
-	_ = json.NewEncoder(w).Encode(
-		Link{
-			ID:        nbl.ID,
-			ShortLink: nbl.ShortLink,
-			LongLink:  nbl.LongLink,
-			Data:      nbl.Data,
-		},
-	)
+	return Link{
+		ID:        nbl.ID,
+		ShortLink: nbl.ShortLink,
+		LongLink:  nbl.LongLink,
+		Data:      nbl.Data,
+	}, nil
 }
